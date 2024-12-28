@@ -1,0 +1,49 @@
+# Compiler and flags
+CC = gcc
+CROSS_CC = arm-none-eabi-gcc
+CFLAGS = -Wall -Werror -g -O0 -std=c99
+CPPFLAGS = 
+LDFLAGS = 
+PLATFORM = HOST
+
+# Source files based on platform
+SOURCES_HOST = main.c memory.c
+SOURCES_MSP432 = main.c memory.c interrupts_msp432p401r_gcc.c startup_msp432p401r_gcc.c system_msp432p401r.c
+
+# Include directories
+INCLUDES = -Iinclude/common -Iinclude/msp432
+
+# Output executable name
+OUTPUT = c1m2.out
+
+# Conditional source selection based on platform
+ifeq ($(PLATFORM), HOST)
+    CC := $(CC)
+    SOURCES := $(SOURCES_HOST)
+else ifeq ($(PLATFORM), MSP432)
+    CC := $(CROSS_CC)
+    LDFLAGS += -T msp432p401r.lds
+    SOURCES := $(SOURCES_MSP432)
+else
+    $(error "Unsupported PLATFORM specified")
+endif
+
+# Object files generation
+OBJ_FILES = $(SOURCES:.c=.o)
+
+# Build rules
+all: $(OUTPUT)
+
+$(OUTPUT): $(OBJ_FILES)
+	$(CC) $(OBJ_FILES) $(LDFLAGS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCLUDES) -c $< -o $@
+
+size_report:
+	gcc size $(OUTPUT)
+
+clean:
+	rm -f $(OBJ_FILES) $(OUTPUT)
+
+.PHONY: all clean size_report
